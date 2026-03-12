@@ -60,10 +60,11 @@ def main():
 
     # Step 2 – Cloud removal + vegetation indices
     from scripts import cloud_removal
+    effective_download_result = download_result or {}
     cloud_result = step(
         "Step 2: Cloud removal + vegetation indices",
         cloud_removal.run,
-        download_result,
+        effective_download_result,
         skip=cfg.SKIP_CLOUD_REMOVAL,
     )
 
@@ -92,13 +93,13 @@ def main():
         skip=cfg.SKIP_PROCESSING,
     )
 
-    # Step 6 – DB push
-    from scripts import db_push
-    step(
-        "Step 6: Push parquet → Supabase",
-        db_push.run,
-        skip=cfg.SKIP_DB_PUSH,
-    )
+    # # Step 6 – DB push
+    # from scripts import db_push
+    # step(
+    #     "Step 6: Push parquet → Supabase",
+    #     db_push.run,
+    #     skip=cfg.SKIP_DB_PUSH,
+    # )
 
     print(f"\n{'='*70}")
     print("🎉  PIPELINE COMPLETE")

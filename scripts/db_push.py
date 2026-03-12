@@ -309,18 +309,6 @@ class ParquetPusher:
         else:
             print("\n❌ Push cancelled by user")
 
-def main():
-    # Check if Output folder exists
-    output_folder = cfg.OUTPUT_DIR
-    if not output_folder.exists():
-        print(f"❌ Error: {output_folder} folder not found!")
-        return
-    
-    print("🔧 Parquet to Supabase Pusher")
-    print(f"📁 Working directory: {output_folder.absolute()}")
-    
-    pusher = ParquetPusher(output_folder=OUTPUT_DIR_ENV)
-    pusher.run()
 
 
 def run() -> None:

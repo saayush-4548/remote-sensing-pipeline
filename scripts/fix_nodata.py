@@ -1,9 +1,9 @@
 """
-scripts/03_fix_nodata.py
+scripts/fix_nodata.py
 ========================
 Step 3 - Fix NoData value on NDRE and NDWI rasters to match cloud_free (-32768).
 
-Run standalone: python scripts/03_fix_nodata.py
+Run standalone: python scripts/fix_nodata.py
 """
 import sys
 from pathlib import Path
@@ -14,15 +14,29 @@ import rasterio
 import numpy as np
 
 
-
 def run(cloud_removal_result: dict) -> None:
     """Set NoData=-32768 on NDRE/NDWI rasters."""
-    INFERENCE_DATE = cloud_removal_result["INFERENCE_DATE"]
+
+    # ── These are the same regardless of which path we take ──────────────────
     cloud_free_dir = cfg.CLOUD_FREE_DIR
-
     NODATA_VALUE = -32768.0
-    inference_compact = INFERENCE_DATE.replace('-', '')
 
+    # ── Resolve inference date ────────────────────────────────────────────────
+    if not cloud_removal_result:
+        print("⏭  fix_nodata: no cloud_removal_result, inferring from disk...")
+        tifs = sorted(cloud_free_dir.glob("ndre_PROD_*.tif"))
+        if not tifs:
+            print("   No index rasters found, skipping.")
+            return
+        # ndre_PROD_20260219.tif  →  "20260219"
+        compact = tifs[-1].stem.split("_")[-1]
+        INFERENCE_DATE = f"{compact[:4]}-{compact[4:6]}-{compact[6:8]}"
+        print(f"   Inferred inference date: {INFERENCE_DATE}")
+    else:
+        INFERENCE_DATE = cloud_removal_result["INFERENCE_DATE"]
+
+    # ── Build file list ───────────────────────────────────────────────────────
+    inference_compact = INFERENCE_DATE.replace('-', '')
     ndre_path = cloud_free_dir / f"ndre_PROD_{inference_compact}.tif"
     ndwi_path = cloud_free_dir / f"ndwi_PROD_{inference_compact}.tif"
 
@@ -32,10 +46,15 @@ def run(cloud_removal_result: dict) -> None:
     if ndwi_path.exists():
         files_to_fix.append(("NDWI", ndwi_path))
 
+    if not files_to_fix:
+        print(f"   ⚠️  No NDRE/NDWI rasters found for {INFERENCE_DATE}, skipping.")
+        return
+
     print(f"🔧 Setting NoData={NODATA_VALUE} for index rasters")
     print(f"   Inference date: {INFERENCE_DATE}")
-    print(f"   Output dir: {cloud_free_dir}")
+    print(f"   Output dir:     {cloud_free_dir}")
 
+    # ── Fix each file ─────────────────────────────────────────────────────────
     for name, path in files_to_fix:
         with rasterio.open(path) as src:
             old_nodata = src.nodata
